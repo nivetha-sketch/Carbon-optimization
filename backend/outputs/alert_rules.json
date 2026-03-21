@@ -1,0 +1,12 @@
+{
+  "rules": [
+    {
+      "id": "a85a5a2d-daf4-4b48-8a34-72ec9c722f82",
+      "name": "Reduction percentage below target",
+      "metric": "Reduction_Percentage",
+      "operator": "lt",
+      "threshold": 24.0,
+      "enabled": true
+    }
+  ]
+}
