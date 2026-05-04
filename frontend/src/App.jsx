@@ -145,14 +145,17 @@ function App() {
     }
   }
 
+  // Only allow one selection per filter type
   function toggleFilter(key, value) {
     setFilters((prev) => {
       const current = prev[key];
       const exists = current.includes(value);
-      return {
-        ...prev,
-        [key]: exists ? current.filter((x) => x !== value) : [...current, value],
-      };
+      // If already selected, deselect
+      if (exists) {
+        return { ...prev, [key]: [] };
+      }
+      // Otherwise, select only this value
+      return { ...prev, [key]: [value] };
     });
   }
 
@@ -376,7 +379,12 @@ function App() {
             <h4>Decision</h4>
             <div className="chip-wrap">
               {meta?.filters?.decisions?.map((d) => (
-                <button key={d.value} className={filters.decisions.includes(d.value) ? "chip chip-on" : "chip"} onClick={() => toggleFilter("decisions", d.value)}>
+                <button
+                  key={d.value}
+                  className={filters.decisions.includes(d.value) ? "chip chip-on" : "chip"}
+                  onClick={() => toggleFilter("decisions", d.value)}
+                  aria-pressed={filters.decisions.includes(d.value)}
+                >
                   {d.label}
                 </button>
               ))}
@@ -384,7 +392,12 @@ function App() {
             <h4>Region</h4>
             <div className="chip-wrap">
               {meta?.filters?.regions?.map((r) => (
-                <button key={r.value} className={filters.regions.includes(r.value) ? "chip chip-on" : "chip"} onClick={() => toggleFilter("regions", r.value)}>
+                <button
+                  key={r.value}
+                  className={filters.regions.includes(r.value) ? "chip chip-on" : "chip"}
+                  onClick={() => toggleFilter("regions", r.value)}
+                  aria-pressed={filters.regions.includes(r.value)}
+                >
                   {r.label}
                 </button>
               ))}
@@ -392,7 +405,12 @@ function App() {
             <h4>Priority</h4>
             <div className="chip-wrap">
               {meta?.filters?.priorities?.map((p) => (
-                <button key={p.value} className={filters.priorities.includes(p.value) ? "chip chip-on" : "chip"} onClick={() => toggleFilter("priorities", p.value)}>
+                <button
+                  key={p.value}
+                  className={filters.priorities.includes(p.value) ? "chip chip-on" : "chip"}
+                  onClick={() => toggleFilter("priorities", p.value)}
+                  aria-pressed={filters.priorities.includes(p.value)}
+                >
                   {p.label}
                 </button>
               ))}
@@ -507,43 +525,15 @@ function App() {
           )}
 
           {activeModule === "insights" && (
-            <>
-              <section className="insights">
-                {safeInsights.map((x) => (
-                  <article key={x.title} className="insight-card">
-                    <h4>{x.title}</h4>
-                    <div className="insight-value">{x.value}</div>
-                    <p>{x.description}</p>
-                  </article>
-                ))}
-              </section>
-              <section className="charts two">
-                <ChartCard title="Carbon before vs after optimization (by Decision)">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={analytics?.charts?.carbonByDecision || []}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                      <XAxis dataKey="name" angle={-20} textAnchor="end" interval={0} height={80} />
-                      <YAxis />
-                      <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} units`, "Carbon"]} />
-                      <Legend />
-                      <Bar dataKey="predicted" name="Before optimization" fill="#f59e0b" />
-                      <Bar dataKey="optimized" name="After optimization" fill="#22c55e" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartCard>
-                <ChartCard title="Final carbon load by region">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={analytics?.charts?.carbonByRegion || []}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} units`, "Optimized carbon"]} />
-                      <Bar dataKey="optimized" name="Optimized carbon" fill="#06b6d4" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartCard>
-              </section>
-            </>
+            <section className="insights">
+              {safeInsights.map((x) => (
+                <article key={x.title} className="insight-card">
+                  <h4>{x.title}</h4>
+                  <div className="insight-value">{x.value}</div>
+                  <p>{x.description}</p>
+                </article>
+              ))}
+            </section>
           )}
 
           {activeModule === "operations" && (
@@ -590,34 +580,38 @@ function App() {
             <section className="panel">
               <h3>Pipeline Operations</h3>
               <div className="run-mode-row">
-                <button className={runMode === "demo" ? "chip chip-on" : "chip"} onClick={() => setRunMode("demo")}>
+                <button className={runMode === "demo" ? "chip chip-on" : "chip"} onClick={() => setRunMode("demo")}> 
                   Demo Mode
                 </button>
-                <button className={runMode === "real" ? "chip chip-on" : "chip"} onClick={() => setRunMode("real")}>
+                <button className={runMode === "real" ? "chip chip-on" : "chip"} onClick={() => setRunMode("real")}> 
                   Real Mode
                 </button>
               </div>
               <p className="hint">
                 Demo Mode enforces 96 coverage combos. Real Mode uses uploaded `new_incoming_workload.csv`.
               </p>
-              <div className="upload-row">
-                <input
-                  type="file"
-                  accept=".csv"
-                  className="view-input"
-                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                />
-                <button className="btn btn-soft" onClick={handleUploadWorkload}>
-                  Upload Workload CSV
-                </button>
-              </div>
-              <button className="btn btn-primary" onClick={handleRunAll} disabled={running}>
-                {running ? "Running..." : "Run Full Pipeline"}
-              </button>
-              <button className="btn btn-soft" onClick={refreshAll}>
-                Refresh Data
-              </button>
-              {log && <textarea className="logs" value={log} readOnly />}
+              {runMode === "real" && (
+                <>
+                  <div className="upload-row">
+                    <input
+                      type="file"
+                      accept=".csv"
+                      className="view-input"
+                      onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                    />
+                    <button className="btn btn-soft" onClick={handleUploadWorkload}>
+                      Upload Workload CSV
+                    </button>
+                  </div>
+                  <button className="btn btn-primary" onClick={handleRunAll} disabled={running}>
+                    {running ? "Running..." : "Run Full Pipeline"}
+                  </button>
+                  <button className="btn btn-soft" onClick={refreshAll}>
+                    Refresh Data
+                  </button>
+                  {log && <textarea className="logs" value={log} readOnly />}
+                </>
+              )}
             </section>
           )}
 
